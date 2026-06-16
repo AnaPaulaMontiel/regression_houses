@@ -219,3 +219,11 @@ __marimo__/
 
 # Logs de la aplicación y feedback de usuarios
 historico_consultas.csv
+
+# data files
+data/
+output/
+
+//Ignorar DS
+
+.DS_Store
