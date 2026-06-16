@@ -227,3 +227,19 @@ output/
 //Ignorar DS
 
 .DS_Store
+# Entorno virtual de Python
+.venv/
+env/
+venv/
+__pycache__/
+*.pyc
+
+# Logs de producción y feedback de usuarios
+historico_consultas.csv
+
+# Archivos temporales del sistema
+.DS_Store
+Thumbs.db
+# data files
+data/
+output/
