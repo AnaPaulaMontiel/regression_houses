@@ -216,3 +216,6 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Logs de la aplicación y feedback de usuarios
+historico_consultas.csv
