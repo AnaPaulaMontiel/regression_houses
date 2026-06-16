@@ -195,3 +195,66 @@ if st.session_state.calculo_realizado:
             df_nuevo_registro = pd.DataFrame([nueva_consulta])
             df_nuevo_registro.to_csv('historico_consultas.csv', mode='a', header=not os.path.exists('historico_consultas.csv'), index=False)
             st.toast("Registrado. Analizaremos este caso para mejorar el algoritmo. 🛠️")
+
+            # ... (Tu código de cargar_recursos() se queda igual) ...
+modelo_ridge, scaler, columnas_modelo = cargar_recursos()
+
+# ==========================================================
+# 1.5 FUNCIÓN DE PREPROCESAMIENTO (¡Esencial para los Test!)
+# ==========================================================
+def preprocesar_entrada(features_usuario, columnas_modelo, scaler):
+    """
+    Toma el diccionario con las características que movió el usuario,
+    aplica las medias del escalador para evitar nulos, calcula las variables 
+    colaterales y devuelve el DataFrame de 258 columnas listo para el modelo.
+    """
+    # 1. Creamos el registro base con las 258 columnas en cero
+    datos_modelo = {col: 0 for col in columnas_modelo}
+    
+    # 2. Inicializamos la tabla del escalador usando sus medias exactas
+    df_escalar = pd.DataFrame([scaler.mean_], columns=scaler.feature_names_in_)
+    
+    # 3. Volcamos los datos introducidos por el usuario
+    for col, val in features_usuario.items():
+        if col in df_escalar.columns:
+            df_escalar[col] = float(val)
+            
+    # Ajustes lógicos colaterales
+    if 'GarageCars' in features_usuario:
+        df_escalar['GarageArea'] = float(features_usuario['GarageCars'] * 300)
+    if 'TotalBsmtSF' in features_usuario:
+        df_escalar['1stFlrSF'] = float(features_usuario['TotalBsmtSF'])
+        
+    # 4. Escalamos manteniendo las columnas
+    datos_escalados = scaler.transform(df_escalar[scaler.feature_names_in_])
+    df_escalado_limpio = pd.DataFrame(datos_escalados, columns=scaler.feature_names_in_)
+    
+    # 5. Pasamos los valores numéricos escalados al diccionario final
+    for col in df_escalado_limpio.columns:
+        if col in datos_modelo:
+            datos_modelo[col] = df_escalado_limpio.loc[0, col]
+            
+    # 6. Construimos el DataFrame final estructurado para Ridge
+    return pd.DataFrame([datos_modelo], columns=columnas_modelo)
+
+if st.button("📊 Calcular Estimación de Valor", type="primary"):
+    # Activamos la memoria de sesión de Streamlit
+    st.session_state.calculo_realizado = True
+    
+    # Embebedemos los inputs de la interfaz en un diccionario limpio
+    inputs_usuario = {
+        'OverallQual': overall_qual,
+        'GrLivArea': gr_liv_area,
+        'GarageCars': garage_cars,
+        'TotalBsmtSF': total_bsmt_sf,
+        'YearBuilt': year_built,
+        'FullBath': full_bath,
+        'Fireplaces': fireplaces
+    }
+    
+    # Llamamos a la función modularizada
+    df_final_scoring = preprocesar_entrada(inputs_usuario, columnas_modelo, scaler)
+    
+    # Predicción final y reversión del logaritmo
+    prediccion_log = modelo_ridge.predict(df_final_scoring)
+    st.session_state.precio_estimado = float(np.expm1(prediccion_log[0]))
